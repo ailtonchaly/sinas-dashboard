@@ -1,24 +1,19 @@
+import os
 import pandas as pd
 from dash import Dash, dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ---------------- Arquivo de dados ----------------
-ARQUIVO_FONTES = "fontes_cleaned.xlsx"  # ou "fontes_cleaned.csv"
-
-
 # ---------------- Ler dados ----------------
-def ler_levantamentos():
-    try:
-        df = pd.read_excel(ARQUIVO_FONTES)  # se for CSV, use pd.read_csv
-    except FileNotFoundError:
-        raise Exception(f"Arquivo {ARQUIVO_FONTES} não encontrado. Coloque o arquivo no mesmo diretório do app.py")
+# Substitua 'fontes_cleaned.xlsx' pelo seu arquivo com os dados limpos
+DATA_FILE = "fontes_cleaned.xlsx"
 
+def ler_levantamentos():
+    df = pd.read_excel(DATA_FILE)
     df['Data_Levantamento'] = pd.to_datetime(df['Data_Levantamento'])
     df = df[(df['Data_Levantamento'].dt.year == 2025) & (df['Provincia'] != 'Maputo Cidade')]
     df['Ano_Mes'] = df['Data_Levantamento'].dt.to_period('M').astype(str)
     return df
-
 
 # ---------------- Processar dados ----------------
 def preparar_dados(df):
@@ -36,7 +31,6 @@ def preparar_dados(df):
     kpi_media_mensal = df_mes_geral['Total_Levantamentos'].mean()
 
     return df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal
-
 
 # ---------------- Criar gráficos ----------------
 def criar_graficos(df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas):
@@ -73,10 +67,9 @@ def criar_graficos(df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas):
 
     return fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media
 
-
 # ---------------- Criar dashboard ----------------
-def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media,
-                    ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal):
+def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media, ranking_ativas,
+                    ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal):
     app = Dash(__name__)
     app.title = "Dashboard Levantamentos SINAS 2025 - Super Top"
 
@@ -84,6 +77,7 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
         html.H1("Dashboard Levantamentos SINAS 2025",
                 style={'textAlign': 'center', 'marginBottom': 20, 'color': '#1F618D'}),
 
+        # KPI Cards
         html.Div([
             html.Div([html.H4("Total Levantamentos 2025"), html.P(f"{kpi_total}")],
                      style={'width': '20%', 'display': 'inline-block', 'textAlign': 'center',
@@ -99,6 +93,7 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
                             'backgroundColor': '#FCF3CF', 'padding': 20, 'margin': 5, 'borderRadius': 10})
         ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': 30}),
 
+        # Gráficos principais
         html.Div([
             html.Div(dcc.Graph(figure=fig_linha),
                      style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
@@ -106,6 +101,7 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
                      style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginLeft': '4%'})
         ], style={'marginBottom': 40}),
 
+        # Ranking tabelas interativas
         html.H2("Ranking Províncias Mais Ativas", style={'color': '#1F618D'}),
         dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in ranking_ativas.columns],
@@ -117,22 +113,25 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
             style_header={'backgroundColor': '#27AE60', 'color': 'white', 'fontWeight': 'bold'}
         ),
 
+        # Gráficos adicionais
         html.Div([
             html.Div(dcc.Graph(figure=fig_paradas), style={'width': '48%', 'display': 'inline-block'}),
             html.Div(dcc.Graph(figure=fig_media), style={'width': '48%', 'display': 'inline-block', 'marginLeft': '4%'})
         ], style={'marginTop': 40})
+
     ], style={'width': '95%', 'margin': 'auto'})
 
     return app
 
-
 # ---------------- Execução ----------------
 if __name__ == "__main__":
     df = ler_levantamentos()
-    df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal = preparar_dados(
-        df)
+    df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal = preparar_dados(df)
     fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media = criar_graficos(
         df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas)
     app = criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media,
                           ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal)
-    app.run_server(host="0.0.0.0", port=8050, debug=False)
+
+    # --- PORTA DINÂMICA para Render ---
+    port = int(os.environ.get("PORT", 8050))
+    app.run_server(host="0.0.0.0", port=port, debug=False)
