@@ -4,11 +4,10 @@ from dash import Dash, dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ---------------- Ler dados ----------------
-# Substitua 'fontes_cleaned.xlsx' pelo seu arquivo com os dados limpos
-DATA_FILE = "fontes_cleaned.xlsx"
+# ---------------- Ler dados do Excel ----------------
+DATA_FILE = "fontes_cleaned.xlsx"  # Substitua pelo seu arquivo
 
-def ler_levantamentos():
+def ler_levantamentos_excel():
     df = pd.read_excel(DATA_FILE)
     df['Data_Levantamento'] = pd.to_datetime(df['Data_Levantamento'])
     df = df[(df['Data_Levantamento'].dt.year == 2025) & (df['Provincia'] != 'Maputo Cidade')]
@@ -36,26 +35,22 @@ def preparar_dados(df):
 def criar_graficos(df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas):
     fig_linha = px.line(df_mes_geral, x='Ano_Mes', y='Total_Levantamentos', markers=True,
                         title='Levantamentos 2025 (Geral)',
-                        labels={'Ano_Mes': 'Ano-Mês', 'Total_Levantamentos': 'Total Levantamentos'})
-    fig_linha.update_traces(line=dict(color='#2E86AB', width=4), marker=dict(size=9))
-    fig_linha.update_layout(plot_bgcolor='#F4F6F7', paper_bgcolor='#F4F6F7', font=dict(family='Arial', size=12))
+                        labels={'Ano_Mes': 'Ano-Mês', 'Total_Levantamentos': 'Total Levantamentos'},
+                        template='plotly_white')
+    fig_linha.update_traces(line=dict(color='#2980B9', width=4), marker=dict(size=8, symbol='circle'))
 
     fig_barras_prov = px.bar(df_prov_mes, x='Ano_Mes', y='Total_Levantamentos', color='Provincia', barmode='group',
-                             title='Levantamentos por Província',
-                             labels={'Ano_Mes': 'Ano-Mês', 'Total_Levantamentos': 'Total Levantamentos'})
-    fig_barras_prov.update_layout(xaxis_tickangle=-45, plot_bgcolor='#F4F6F7', paper_bgcolor='#F4F6F7',
-                                  font=dict(family='Arial', size=12))
+                             title='Levantamentos por Província', template='plotly_white')
+    fig_barras_prov.update_layout(xaxis_tickangle=-45)
 
     fig_ranking_ativas = px.bar(ranking_ativas, x='Total_Levantamentos', y='Provincia', orientation='h',
                                 color='Total_Levantamentos', color_continuous_scale='Greens',
-                                title='Ranking Províncias Mais Ativas')
-    fig_ranking_ativas.update_layout(yaxis={'categoryorder': 'total ascending'}, plot_bgcolor='#F4F6F7',
-                                     paper_bgcolor='#F4F6F7')
+                                title='Ranking Províncias Mais Ativas', template='plotly_white')
+    fig_ranking_ativas.update_layout(yaxis={'categoryorder': 'total ascending'})
 
     fig_paradas = px.bar(ranking_paradas, x='Provincia', y='Data_Levantamento',
                          title='Províncias com Últimos Levantamentos Mais Antigos',
-                         color='Data_Levantamento', color_continuous_scale='Reds')
-    fig_paradas.update_layout(plot_bgcolor='#F4F6F7', paper_bgcolor='#F4F6F7', font=dict(family='Arial', size=12))
+                         color='Data_Levantamento', color_continuous_scale='Reds', template='plotly_white')
 
     fig_media = go.Figure(go.Indicator(
         mode="number+delta",
@@ -63,15 +58,16 @@ def criar_graficos(df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas):
         number={'prefix': "Média Mensal: "},
         delta={'reference': df_mes_geral['Total_Levantamentos'].mean() * 1.1, 'relative': True},
         title={"text": "Média de Levantamentos por Mês"}))
-    fig_media.update_layout(paper_bgcolor='#F4F6F7')
+    fig_media.update_layout(paper_bgcolor='rgba(0,0,0,0)')
 
     return fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media
 
 # ---------------- Criar dashboard ----------------
-def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media, ranking_ativas,
-                    ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal):
+def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media,
+                    ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal):
+
     app = Dash(__name__)
-    app.title = "Dashboard Levantamentos SINAS 2025 - Super Top"
+    app.title = "Dashboard Levantamentos SINAS 2025"
 
     app.layout = html.Div([
         html.H1("Dashboard Levantamentos SINAS 2025",
@@ -95,10 +91,8 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
 
         # Gráficos principais
         html.Div([
-            html.Div(dcc.Graph(figure=fig_linha),
-                     style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-            html.Div(dcc.Graph(figure=fig_barras_prov),
-                     style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginLeft': '4%'})
+            html.Div(dcc.Graph(figure=fig_linha), style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+            html.Div(dcc.Graph(figure=fig_barras_prov), style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginLeft': '4%'})
         ], style={'marginBottom': 40}),
 
         # Ranking tabelas interativas
@@ -119,19 +113,18 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
             html.Div(dcc.Graph(figure=fig_media), style={'width': '48%', 'display': 'inline-block', 'marginLeft': '4%'})
         ], style={'marginTop': 40})
 
-    ], style={'width': '95%', 'margin': 'auto'})
+    ], style={'width': '95%', 'margin': 'auto', 'padding': '20px'})
 
     return app
 
 # ---------------- Execução ----------------
 if __name__ == "__main__":
-    df = ler_levantamentos()
+    df = ler_levantamentos_excel()
     df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal = preparar_dados(df)
-    fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media = criar_graficos(
-        df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas)
+    fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media = criar_graficos(df_mes_geral, df_prov_mes, ranking_ativas, ranking_paradas)
     app = criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media,
                           ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal)
 
-    # --- PORTA DINÂMICA para Render ---
+    # --- Porta dinâmica para Render ---
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=False)
