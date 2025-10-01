@@ -4,9 +4,10 @@ from dash import Dash, dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ---------------- Ler dados do Excel ----------------
-DATA_FILE = "fontes_cleaned.xlsx"  # Substitua pelo seu arquivo
+# ---------------- Configuração do arquivo Excel ----------------
+DATA_FILE = "fontes_cleaned.xlsx"  # coloque este arquivo no mesmo diretório do app.py
 
+# ---------------- Ler dados ----------------
 def ler_levantamentos_excel():
     df = pd.read_excel(DATA_FILE)
     df['Data_Levantamento'] = pd.to_datetime(df['Data_Levantamento'])
@@ -73,47 +74,43 @@ def criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas,
         html.H1("Dashboard Levantamentos SINAS 2025",
                 style={'textAlign': 'center', 'marginBottom': 20, 'color': '#1F618D'}),
 
-        # KPI Cards
         html.Div([
             html.Div([html.H4("Total Levantamentos 2025"), html.P(f"{kpi_total}")],
-                     style={'width': '20%', 'display': 'inline-block', 'textAlign': 'center',
-                            'backgroundColor': '#D6EAF8', 'padding': 20, 'margin': 5, 'borderRadius': 10}),
+                     style={'width':'20%','display':'inline-block','textAlign':'center',
+                            'backgroundColor':'#D6EAF8','padding':20,'margin':5,'borderRadius':10}),
             html.Div([html.H4("Número de Províncias"), html.P(f"{kpi_prov}")],
-                     style={'width': '20%', 'display': 'inline-block', 'textAlign': 'center',
-                            'backgroundColor': '#D5F5E3', 'padding': 20, 'margin': 5, 'borderRadius': 10}),
+                     style={'width':'20%','display':'inline-block','textAlign':'center',
+                            'backgroundColor':'#D5F5E3','padding':20,'margin':5,'borderRadius':10}),
             html.Div([html.H4("Último Levantamento"), html.P(f"{kpi_ultimo.date()}")],
-                     style={'width': '20%', 'display': 'inline-block', 'textAlign': 'center',
-                            'backgroundColor': '#FADBD8', 'padding': 20, 'margin': 5, 'borderRadius': 10}),
+                     style={'width':'20%','display':'inline-block','textAlign':'center',
+                            'backgroundColor':'#FADBD8','padding':20,'margin':5,'borderRadius':10}),
             html.Div([html.H4("Média Mensal"), html.P(f"{kpi_media_mensal:.2f}")],
-                     style={'width': '20%', 'display': 'inline-block', 'textAlign': 'center',
-                            'backgroundColor': '#FCF3CF', 'padding': 20, 'margin': 5, 'borderRadius': 10})
-        ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': 30}),
+                     style={'width':'20%','display':'inline-block','textAlign':'center',
+                            'backgroundColor':'#FCF3CF','padding':20,'margin':5,'borderRadius':10})
+        ], style={'display':'flex','justifyContent':'center','flexWrap':'wrap','marginBottom':30}),
 
-        # Gráficos principais
         html.Div([
-            html.Div(dcc.Graph(figure=fig_linha), style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-            html.Div(dcc.Graph(figure=fig_barras_prov), style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginLeft': '4%'})
-        ], style={'marginBottom': 40}),
+            html.Div(dcc.Graph(figure=fig_linha), style={'width':'48%','display':'inline-block','verticalAlign':'top'}),
+            html.Div(dcc.Graph(figure=fig_barras_prov), style={'width':'48%','display':'inline-block','verticalAlign':'top','marginLeft':'4%'})
+        ], style={'marginBottom':40}),
 
-        # Ranking tabelas interativas
         html.H2("Ranking Províncias Mais Ativas", style={'color': '#1F618D'}),
         dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in ranking_ativas.columns],
             data=ranking_ativas.to_dict('records'),
             sort_action='native',
             filter_action='native',
-            style_table={'overflowX': 'auto', 'marginBottom': 30},
-            style_cell={'textAlign': 'center', 'padding': 5},
-            style_header={'backgroundColor': '#27AE60', 'color': 'white', 'fontWeight': 'bold'}
+            style_table={'overflowX':'auto','marginBottom':30},
+            style_cell={'textAlign':'center','padding':5},
+            style_header={'backgroundColor':'#27AE60','color':'white','fontWeight':'bold'}
         ),
 
-        # Gráficos adicionais
         html.Div([
-            html.Div(dcc.Graph(figure=fig_paradas), style={'width': '48%', 'display': 'inline-block'}),
-            html.Div(dcc.Graph(figure=fig_media), style={'width': '48%', 'display': 'inline-block', 'marginLeft': '4%'})
-        ], style={'marginTop': 40})
+            html.Div(dcc.Graph(figure=fig_paradas), style={'width':'48%','display':'inline-block'}),
+            html.Div(dcc.Graph(figure=fig_media), style={'width':'48%','display':'inline-block','marginLeft':'4%'})
+        ], style={'marginTop':40})
 
-    ], style={'width': '95%', 'margin': 'auto', 'padding': '20px'})
+    ], style={'width':'95%','margin':'auto','backgroundImage':'linear-gradient(to bottom, #f0f2f5, #ffffff)', 'padding':'20px'})
 
     return app
 
@@ -125,6 +122,6 @@ if __name__ == "__main__":
     app = criar_dashboard(fig_linha, fig_barras_prov, fig_ranking_ativas, fig_paradas, fig_media,
                           ranking_ativas, ranking_paradas, kpi_total, kpi_prov, kpi_ultimo, kpi_media_mensal)
 
-    # --- Porta dinâmica para Render ---
+    # Porta dinâmica para Render
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=False)
